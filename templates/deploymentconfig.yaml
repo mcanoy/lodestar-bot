@@ -1,0 +1,70 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: {{ .Values.name }}
+  name: {{ .Values.name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    deploymentconfig: {{ .Values.name }}
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: {{ .Values.name }}
+        deploymentconfig: {{ .Values.name }}
+    spec:
+      containers:
+      - env:
+        - name: NODE_TLS_REJECT_UNAUTHORIZED
+          value: "0"
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /hubot/{{ .Values.name }}-hangout.json
+        envFrom:
+          - secretRef:
+              name: {{ .Values.config.secretName }}
+        image: {{ .Values.image.name }}:{{ .Values.image.tag }}
+        imagePullPolicy: Always
+        name: {{ .Values.image.name }}
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /hubot/
+          name: {{ .Values.name }}-hangout-cm
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: {{ .Values.name }}-hangout-cm
+        name: {{ .Values.name }}-hangout-cm
+  test: false
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - {{ .Values.image.name }}
+      from:
+        kind: ImageStreamTag
+        name: {{ .Values.image.name }}:{{ .Values.image.tag }}
+    type: ImageChange
+  - type: ConfigChange

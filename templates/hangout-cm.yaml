@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  {{ .Values.name }}-hangout.json: |
+    {
+      "type": "service_account",
+      "todo": "full content of your key"
+    }
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-hangout-cm

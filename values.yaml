@@ -1,0 +1,20 @@
+name: lodestar-bot
+
+image:
+  name: hubot
+  tag: latest
+
+git:
+  uri: https://github.com/mcanoy/ocp-examples.git
+  ref: hubot
+  contextDir: hubot
+
+builder:
+  image: nodejs
+  tag: 10
+
+config:
+  webhookToken: xxx
+  hangoutsSpace: yyz
+  secretName: hubot-secret
+
