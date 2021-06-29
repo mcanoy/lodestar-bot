@@ -47,6 +47,8 @@ spec:
         volumeMounts:
         - mountPath: /hubot/
           name: {{ .Values.name }}-hangout-cm
+        - mountPath: /user-map/
+          name: {{ .Values.name }}-user-map-cm
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -57,6 +59,10 @@ spec:
           defaultMode: 420
           name: {{ .Values.name }}-hangout-cm
         name: {{ .Values.name }}-hangout-cm
+      - configMap:
+          defaultMode: 420
+          name: {{ .Values.name }}-user-map-cm
+        name: {{ .Values.name }}-user-map-cm
   test: false
   triggers:
   - imageChangeParams:

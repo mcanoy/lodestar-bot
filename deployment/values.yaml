@@ -1,0 +1,25 @@
+name: lodestar-bot
+
+image:
+  name: hubot
+  tag: latest
+
+git:
+  uri: https://github.com/mcanoy/lodestar-bot.git
+  ref: main
+  contextDir: hubot
+
+builder:
+  image: nodejs
+  tag: 10
+
+config:
+  backendUrl: http://lodestar-backend:8080
+  webhookToken: xxx
+  cleanupToken: xab
+  hangoutsSpace: yyz
+  secretName: hubot-secret
+  clientId: clientId
+  clientSecret: clientSecret
+  ssoUrl: http://mysso.url/token
+

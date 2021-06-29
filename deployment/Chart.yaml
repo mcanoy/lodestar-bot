@@ -1,5 +1,5 @@
 apiVersion: v2
-name: backend
+name: hubot
 description: A Helm chart to deploy a hubot to OpenShift
 
 type: application
