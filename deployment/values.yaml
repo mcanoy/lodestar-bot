@@ -22,4 +22,7 @@ config:
   clientId: clientId
   clientSecret: clientSecret
   ssoUrl: http://mysso.url/token
+  chatWebhookUrl: https://chat/nNC6lmC2Os
+  githubSecret: xxxxxxxxxxx
+  userMapJson: /user-map/user-map.json
 
