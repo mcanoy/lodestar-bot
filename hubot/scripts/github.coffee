@@ -14,6 +14,11 @@ userMap = require(process.env.USER_MAP_JSON)
 
 module.exports = (robot) ->
 
+  robot.router.post '/testy', (req, res) ->
+    robot.logger.info "test"
+
+    res.send 'OK'
+
   robot.router.post '/env', (req, res) ->
     robot.logger.info "Webhook url ", process.env.CHAT_WEBHOOK_URL
     robot.logger.info "Github ", process.env.GITHUB_SECRET
@@ -100,7 +105,7 @@ pullRequestMessage = (body) ->
   if action == 'review_requested'
     reviewers = "";
     for rev in body.pull_request.requested_reviewers
-      reviewers = reviewers + rev.login + ' '
+      reviewers = reviewers + getUserName(rev.login) + ' '
     message = "#{reviewers}-  Your review requested for *PR-#{number}*"
   else if action == 'review_request_removed'
     message = "A reviewer was removed from *PR-#{number}*"
