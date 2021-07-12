@@ -94,7 +94,7 @@ pullRequestReview = (body) ->
   return JSON.stringify({ "text" : message })
 
 pullRequestMessage = (body) ->
-  prUrl = if body.action == 'opened' then body.pull_request.html_url else ''
+  prUrl = if body.action == 'opened' then "<#{body.pull_request.html_url}|#{body.pull_request.html_url}>" else ''
   number = body.pull_request.number
   action = body.action
   user = getUserName(body.pull_request.user.login)
