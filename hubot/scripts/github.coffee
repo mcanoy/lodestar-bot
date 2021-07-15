@@ -14,6 +14,8 @@ userMap = require(process.env.USER_MAP_JSON)
 
 module.exports = (robot) ->
 
+
+
   robot.router.post '/github', (req, res) ->
     token = req.headers['x-hub-signature-256']
 
@@ -30,22 +32,32 @@ module.exports = (robot) ->
           chatData = { message: message, threadKey: threadKey }
           return chatData
       .then ( chatData ) ->
-         chatUrl = process.env.CHAT_WEBHOOK_URL + '&threadKey=' + chatData.threadKey
-         robot.http(chatUrl).header('Content-Type', 'application/json')
-           .post(chatData.message) (err, resp, body) ->
-             if err
-               robot.logger.error "error", err
-               res.send(400).send 'Error posting to chat'
-             else
-               res.send 'OK'
-       .catch (error) ->
-         robot.logger.error error
-         res.status(400).send error
-       .then () ->
-         robot.logger.info "fin"
+        robot.logger.info "chatData", chatData
+        chatUrl = process.env.CHAT_WEBHOOK_URL + '&threadKey=' + chatData.threadKey
+        robot.http(chatUrl).header('Content-Type', 'application/json')
+         .post(chatData.message) (err, resp, body) ->
+            if err
+              robot.logger.error "error", err
+              res.send(400).send 'Error posting to chat'
+            else
+              res.send 'OK'
+      .catch (error) ->
+        robot.logger.error error
+        res.status(400).send error
+      .then () ->
+        robot.logger.info "fin"
     else
       robot.logger.info 'Bad signature ', token
       res.status(401).send 'Ye shall not pass'
+
+getPushPRNumber = (commitMesssage) ->
+  re = /(?<=Merge pull request #)(\w+)/i
+  pr = commitMesssage.match(re)
+
+  unless pr? #FE doesn't follow this format
+    re = /(?<=#)(\w+)/i
+    pr = commitMesssage.match(re)
+  return pr
 
 getThreadKey = (robot, body, event) ->
   return new Promise (resolve, reject) ->
@@ -54,18 +66,21 @@ getThreadKey = (robot, body, event) ->
     else if event == 'release'
       resolve 'release'
     else if event == 'push' and "refs/heads/" + body.repository.default_branch == body.ref
-      re = /(?<=Merge pull request #)(\w+)/i
-      pr = body.head_commit.message.match(re)
+      pr = getPushPRNumber(body.head_commit.message)
+
       if pr?
         prNumber = pr[0]
         repo = body.repository.full_name
         prUrl = "https://api.github.com/repos/#{repo}/pulls/#{prNumber}"
+        robot.logger.info "pr url", prUrl
         robot.http(prUrl).header('Content-Type', 'application/json').get() (err, resp, body2) ->
           if err
             reject err
           else
             data = JSON.parse(body2)
             resolve 'pr-' + data.id
+      else
+        reject 'pr for push not found'
     else
       reject 'no thread key found'
 
@@ -80,27 +95,11 @@ getMessage = (body, event) ->
     else if event == 'push' and "refs/heads/" + body.repository.default_branch == body.ref
       resolve pushMessage(body)
     else
-      reject 'no message found' 
-
-githubPush = (robot, body) ->
-  return new Promise (resolve, reject) ->
-    
-    re = /(?<=Merge pull request #)(\w+)/i
-    pr = body.head_commit.message.match(re)
-    if pr?
-      prNumber = pr[0]
-      repo = body.repository.full_name
-      prUrl = "https://api.github.com/repos/#{repo}/pulls/#{prNumber}"
-      robot.http(prUrl).header('Content-Type', 'application/json').get() (err, resp, body2) ->
-        err ? reject err  : resolve body2  
-    else 
-      reject err   
+      reject 'no message found'   
       
-
-
 pushMessage = (body) ->
-  re = /(?<=Merge pull request #)(\w+)/i
-  pr = body.head_commit.message.match(re)
+  pr = getPushPRNumber(body.head_commit.message)
+  
   if pr?
     prNumber = pr[0]
     repo = body.repository.full_name
