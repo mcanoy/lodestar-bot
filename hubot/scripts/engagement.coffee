@@ -1,20 +1,20 @@
-## # Description:
-## #   Information for the LodeStar application
-## #
-## # Configuration:
-## #   WEBHOOK_TOKEN Matching the Gitlab token
-## #   HANGOUTS_SPACE The space to push messages to when not hearing or responding
-## #   GOOGLE_APPLICATION_CREDENTIALS The google service account json
-## #
-## # Commands:
-## #   hubot engagments - A count of engagements 
-## #   hubot engagement <customer> <engagement> - Get information on an engagement
-## #   hubot card <card> - Test out card json without pushing it to the server
-## #
-## # Author:
-## #   mcanoy
+# Description:
+#   Information for the LodeStar application
+#
+# Configuration:
+#   WEBHOOK_TOKEN Matching the Gitlab token
+#   HANGOUTS_SPACE The space to push messages to when not hearing or responding
+#   GOOGLE_APPLICATION_CREDENTIALS The google service account json
+#
+# Commands:
+#   hubot engagments - A count of engagements 
+#   hubot engagement <customer> <engagement> - Get information on an engagement
+#   hubot card <card> - Test out card json without pushing it to the server
+#
+# Author:
+#   mcanoy
 ## 
-## module.exports = (robot) ->
+  module.exports = (robot) ->
 ## 
 ##   class TokenService
 ##     constructor: (robot) ->

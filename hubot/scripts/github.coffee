@@ -14,18 +14,6 @@ userMap = require(process.env.USER_MAP_JSON)
 
 module.exports = (robot) ->
 
-  robot.router.post '/testy', (req, res) ->
-    robot.logger.info "test"
-
-    res.send 'OK'
-
-  robot.router.post '/env', (req, res) ->
-    robot.logger.info "Webhook url ", process.env.CHAT_WEBHOOK_URL
-    robot.logger.info "Github ", process.env.GITHUB_SECRET
-    robot.logger.info "User map ", userMap
-
-    res.send 'OK'
-
   robot.router.post '/github', (req, res) ->
     token = req.headers['x-hub-signature-256']
 
@@ -35,34 +23,80 @@ module.exports = (robot) ->
       event = req.headers['x-github-event']
       robot.logger.info event
 
-      message = "";
-      threadId = "";
-
-      if event == 'pull_request'
-        message = pullRequestMessage(req.body)
-        threadId = 'pr-' + req.body.pull_request.id
-      else if event == 'pull_request_review'
-        message = pullRequestReview(req.body)
-        threadId = 'pr-' + req.body.pull_request.id
-      else if event == 'release'
-        message = releaseMessage(req.body)
-        threadId = 'release'
-      else if event == 'push' and "refs/heads/" + req.body.repository.default_branch == req.body.ref
-        message = pushMessage(req.body)
-        threadId = "push"
-
-      robot.logger.info message
-      chatUrl = process.env.CHAT_WEBHOOK_URL + '&threadKey=' + threadId
-      robot.http(chatUrl)
-        .header('Content-Type', 'application/json')
-        .post(message) (err, resp, body) ->
-          if err
-            res.send(400).send 'Error posting to chat'
-          else
-            res.send 'OK'
+      getThreadKey(robot, req.body, event).then (threadKey) ->
+        return threadKey
+      .then ( threadKey ) ->
+        getMessage(req.body, event).then (message) ->
+          chatData = { message: message, threadKey: threadKey }
+          return chatData
+      .then ( chatData ) ->
+         chatUrl = process.env.CHAT_WEBHOOK_URL + '&threadKey=' + chatData.threadKey
+         robot.http(chatUrl).header('Content-Type', 'application/json')
+           .post(chatData.message) (err, resp, body) ->
+             if err
+               robot.logger.error "error", err
+               res.send(400).send 'Error posting to chat'
+             else
+               res.send 'OK'
+       .catch (error) ->
+         robot.logger.error error
+         res.status(400).send error
+       .then () ->
+         robot.logger.info "fin"
     else
       robot.logger.info 'Bad signature ', token
       res.status(401).send 'Ye shall not pass'
+
+getThreadKey = (robot, body, event) ->
+  return new Promise (resolve, reject) ->
+    if event == 'pull_request' || event == 'pull_request_review'
+      resolve 'pr-' + body.pull_request.id
+    else if event == 'release'
+      resolve 'release'
+    else if event == 'push' and "refs/heads/" + body.repository.default_branch == body.ref
+      re = /(?<=Merge pull request #)(\w+)/i
+      pr = body.head_commit.message.match(re)
+      if pr?
+        prNumber = pr[0]
+        repo = body.repository.full_name
+        prUrl = "https://api.github.com/repos/#{repo}/pulls/#{prNumber}"
+        robot.http(prUrl).header('Content-Type', 'application/json').get() (err, resp, body2) ->
+          if err
+            reject err
+          else
+            data = JSON.parse(body2)
+            resolve 'pr-' + data.id
+    else
+      reject 'no thread key found'
+
+getMessage = (body, event) -> 
+  return new Promise (resolve, reject) ->
+    if event == 'pull_request'
+      resolve pullRequestMessage(body)
+    else if event == 'pull_request_review'
+      resolve pullRequestReview(body)
+    else if event == 'release'
+      resolve releaseMessage(body)
+    else if event == 'push' and "refs/heads/" + body.repository.default_branch == body.ref
+      resolve pushMessage(body)
+    else
+      reject 'no message found' 
+
+githubPush = (robot, body) ->
+  return new Promise (resolve, reject) ->
+    
+    re = /(?<=Merge pull request #)(\w+)/i
+    pr = body.head_commit.message.match(re)
+    if pr?
+      prNumber = pr[0]
+      repo = body.repository.full_name
+      prUrl = "https://api.github.com/repos/#{repo}/pulls/#{prNumber}"
+      robot.http(prUrl).header('Content-Type', 'application/json').get() (err, resp, body2) ->
+        err ? reject err  : resolve body2  
+    else 
+      reject err   
+      
+
 
 pushMessage = (body) ->
   re = /(?<=Merge pull request #)(\w+)/i
