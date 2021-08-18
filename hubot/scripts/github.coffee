@@ -114,7 +114,10 @@ releaseMessage = (body) ->
   repo = body.repository.full_name
   user = getUserName(body.sender.login)
 
-  message = "Release `#{release}` was #{action} for repo `#{repo}` by #{user}\r\n\r\n```#{releaseNotes}```"
+  if body.action == 'published'
+    message = "Release `#{release}` was #{action} for repo `#{repo}` by #{user}\r\n\r\n```#{releaseNotes}```"
+  else
+    message = "Release `#{release}` was #{action} for repo `#{repo}`"
 
   return JSON.stringify({ "text" : message })
 
