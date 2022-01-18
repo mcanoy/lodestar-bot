@@ -13,4 +13,5 @@ spec:
     kind: Service
     name: {{ .Values.name }}
     weight: 100
+  {{ if .Values.host }}host: {{ .Values.host }}{{ end }}
   wildcardPolicy: None
